@@ -4,7 +4,7 @@ module.exports = {
       name: 'connectflow',
       script: 'npm',
       args: 'start',
-      cwd: '/home/connectflow/htdocs/www.connectflow.co.in/connectflow',
+      cwd: '/home/connectflow/htdocs/connectflow.co.in/connectflow',
       instances: 1,
       autorestart: true,
       watch: false,
