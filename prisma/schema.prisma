@@ -1,0 +1,454 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model JobSeeker {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  email             String    @unique
+  password          String?
+  fullName          String
+  phone             String?
+  currentJobTitle   String?
+  yearsOfExperience String?
+  education         String?
+  skills            String[]
+  resume            String? // URL or path to stored resume
+  city              String?
+  state             String?
+  country           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  profileComplete   Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
+
+  // Optional fields for additional profile information
+  bio               String?  @db.String
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  preferredJobTypes String[] // e.g., ["Full-time", "Remote", "Contract"]
+  expectedSalary    String?
+  noticePeriod      String?
+  languages         String[]
+  certifications    String[]
+
+  // Relations
+  applications      JobApplication[]
+  resumes          Resume[]
+  interviewSessions InterviewSession[]
+
+  @@map("job_seekers")
+}
+
+model Recruiter {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  email             String    @unique
+  password          String?
+  companyName       String
+  fullName          String
+  phone             String?
+  position          String?
+  companySize       String?
+  industry          String?
+  website           String?
+  city              String?
+  state             String?
+  country           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  profileComplete   Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
+
+  // Optional fields for additional profile information
+  bio               String?  @db.String
+  linkedinUrl       String?
+  companyDescription String? @db.String
+  companyLogo       String? // URL to company logo
+  companyBenefits   String[] // e.g., ["Health Insurance", "Remote Work", "401k"]
+  hiringNeeds       String[] // e.g., ["Software Engineers", "Product Managers"]
+  preferredLocations String[] // e.g., ["Remote", "New York", "San Francisco"]
+
+  // Relations
+  jobs              Job[]
+  applications      JobApplication[]
+  interviewSessions InterviewSession[]
+
+  @@map("recruiters")
+}
+
+model Job {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  title               String
+  department          String?
+  company             String
+  companyId           String?
+  location            String
+  locationType        String
+  employmentType      String
+  experienceLevel     String?
+  salaryMin           Int?
+  salaryMax           Int?
+  salaryCurrency      String?
+  salaryPeriod        String?
+  description         String
+  responsibilities    String[]
+  requirements        String[]
+  benefits            String[]
+  applicationDeadline String?
+  applicationUrl      String?
+  openings            Int      @default(1) // Number of available positions
+  postedDate          DateTime @default(now())
+  postedBy            String   @db.ObjectId // recruiter id
+  applicantsCount     Int      @default(0)
+
+  // Relations
+  recruiter          Recruiter @relation(fields: [postedBy], references: [id])
+  applications       JobApplication[]
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  jobId             String   @db.ObjectId
+  jobSeekerId       String   @db.ObjectId
+  recruiterId       String   @db.ObjectId
+  
+  // Application details
+  resumeUrl         String?  // URL to uploaded resume
+  coverLetter       String?  @db.String
+  expectedSalary    String?
+  noticePeriod      String?
+  availabilityDate  String?
+  
+  // Application status
+  status            String   @default("Applied") // Applied, Under Review, Shortlisted, Rejected, Hired
+  appliedDate       DateTime @default(now())
+  reviewedDate      DateTime?
+  notes             String?  @db.String
+  
+  // Additional information
+  portfolioUrl      String?
+  linkedinUrl       String?
+  githubUrl         String?
+  additionalNotes   String?  @db.String
+  
+  // Relations
+  job               Job        @relation(fields: [jobId], references: [id])
+  jobSeeker         JobSeeker  @relation(fields: [jobSeekerId], references: [id])
+  recruiter         Recruiter  @relation(fields: [recruiterId], references: [id])
+
+  @@map("job_applications")
+}
+
+model Resume {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  jobSeekerId       String   @db.ObjectId
+  name              String
+  template          String
+  data              Json     // Store all resume data as JSON
+  lastModified      DateTime @default(now())
+  jobApplications   Int      @default(0)
+  isActive          Boolean  @default(true)
+  
+  // Relations
+  jobSeeker         JobSeeker @relation(fields: [jobSeekerId], references: [id])
+
+  @@map("resumes")
+}
+
+// AI Video Interview Practice Models
+model InterviewSession {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  userRole          String   // "jobseeker" or "recruiter"
+  role              String   // e.g., "Frontend Developer", "Data Analyst"
+  domain            String   // e.g., "Web Development", "Data Science"
+  status            String   @default("active") // "active", "completed", "paused"
+  totalQuestions    Int      @default(5)
+  currentQuestion   Int      @default(1)
+  totalScore        Float    @default(0)
+  averageScore      Float    @default(0)
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  questions         Question[]
+  user              JobSeeker? @relation(fields: [userId], references: [id])
+  recruiter        Recruiter? @relation(fields: [userId], references: [id])
+
+  @@map("interview_sessions")
+}
+
+model Question {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId         String   @db.ObjectId
+  text              String
+  category          String   // "Technical", "Behavioral", "Domain-specific"
+  difficulty        String   // "Easy", "Medium", "Hard"
+  orderIndex        Int
+  aiGenerated       Boolean  @default(true)
+  expectedAnswer    String?
+  tips              String[]
+  createdAt         DateTime @default(now())
+
+  // Relations
+  session           InterviewSession @relation(fields: [sessionId], references: [id])
+  answers           Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  questionId        String   @db.ObjectId
+  transcript        String
+  videoUrl          String?  // Optional: URL to stored video
+  audioUrl          String?  // Optional: URL to stored audio
+  duration          Int?     // Duration in seconds
+  confidence        Float?   // AI confidence score for transcription
+  createdAt         DateTime @default(now())
+
+  // Relations
+  question          Question @relation(fields: [questionId], references: [id])
+  feedback          Feedback?
+
+  @@map("answers")
+}
+
+model Feedback {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  answerId          String   @db.ObjectId @unique
+  score             Float    // Overall score 0-10
+  communicationScore Float?  // Communication skills score 0-10
+  technicalScore    Float?   // Technical accuracy score 0-10
+  strengths         String[]
+  weaknesses        String[]
+  suggestions       String[]
+  overallFeedback   String?
+  aiGenerated       Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  // Relations
+  answer            Answer @relation(fields: [answerId], references: [id])
+
+  @@map("feedback")
+}
+
+// Social Feed Models for LinkedIn-style News Feed
+model Post {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  content           String   @db.String
+  imageUrl          String?  // URL to uploaded image
+  postType          String   @default("general") // "general", "job_update", "announcement", "event"
+  authorId          String   @db.ObjectId
+  authorRole        String   // "jobseeker" or "recruiter"
+  likesCount        Int      @default(0)
+  commentsCount     Int      @default(0)
+  sharesCount       Int      @default(0)
+  isLikedByUser     Boolean  @default(false)
+  
+  // Event fields
+  eventTitle        String?  // Event title
+  eventDate         DateTime? // Event date and time
+  eventLocation     String?  // Event location
+  
+  // Location field for regular posts
+  location          String?  // Post location
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  author            User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes             Like[]
+  comments          Comment[]
+  shares            Share[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  content           String   @db.String
+  postId            String   @db.ObjectId
+  authorId          String   @db.ObjectId
+  authorRole        String   // "jobseeker" or "recruiter"
+  parentCommentId   String?  @db.ObjectId // For nested replies
+  likesCount        Int      @default(0)
+  repliesCount      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  post              Post @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  author            User @relation(fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parentComment     Comment? @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies           Comment[] @relation("CommentReplies")
+  likes             CommentLike[]
+
+  @@map("comments")
+}
+
+model Like {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId            String   @db.ObjectId
+  userId            String   @db.ObjectId
+  userRole          String   // "jobseeker" or "recruiter"
+  createdAt         DateTime @default(now())
+
+  // Relations
+  post              Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
+
+model CommentLike {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  commentId         String   @db.ObjectId
+  userId            String   @db.ObjectId
+  userRole          String   // "jobseeker" or "recruiter"
+  createdAt         DateTime @default(now())
+
+  // Relations
+  comment           Comment @relation(fields: [commentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("comment_likes")
+}
+
+model Share {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId            String   @db.ObjectId
+  userId            String   @db.ObjectId
+  userRole          String   // "jobseeker" or "recruiter"
+  sharedContent     String?  @db.String // Optional comment when sharing
+  createdAt         DateTime @default(now())
+
+  // Relations
+  post              Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shares")
+}
+
+// Unified User model for the feed system
+model User {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  email             String   @unique
+  fullName          String
+  profileImage      String?  // URL to profile image
+  headline          String?  // Professional headline
+  role              String   // "jobseeker" or "recruiter"
+  companyName       String?  // For recruiters
+  location          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  commentLikes      CommentLike[]
+  shares            Share[]
+  // Connection relations removed - handled manually in API
+  
+  // Messaging relations
+  sentMessages      Message[]
+  
+  // Notifications
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+// Enhanced Connection model for networking
+model Connection {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  connectedUserId   String   @db.ObjectId
+  status            String   @default("pending") // "pending", "accepted", "declined", "blocked"
+  message           String?  // Optional message with connection request
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  acceptedAt        DateTime? // When connection was accepted
+
+  // Relations - Note: Users are stored in JobSeeker and Recruiter tables, not User table
+  // Relations are handled manually in the API
+
+  @@unique([userId, connectedUserId])
+  @@map("connections")
+}
+
+// Messaging System
+model Conversation {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  participants      String[] @db.ObjectId // Array of user IDs
+  lastMessageAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  messages          Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId    String   @db.ObjectId
+  senderId          String   @db.ObjectId
+  content           String   @db.String
+  messageType       String   @default("text") // "text", "image", "file", "connection_request"
+  isRead            Boolean  @default(false)
+  readAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender            User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// Notification System
+model Notification {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  type              String   // "connection_request", "connection_accepted", "message", "job_application", etc.
+  title             String   @db.String
+  message           String   @db.String
+  data              String?  @db.String // JSON data for additional info
+  isRead            Boolean  @default(false)
+  readAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+

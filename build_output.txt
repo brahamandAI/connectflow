@@ -1,0 +1,11 @@
+
+> rozgarhub@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.2
+   - Environments: .env
+   - Experiments (use with caution):
+     ✓ optimizeCss
+
+   Creating an optimized production build ...
+Terminate batch job (Y/N)? 

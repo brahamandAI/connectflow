@@ -1,0 +1,21 @@
+# Generated files
+src/generated/**/*
+.next/**/*
+node_modules/**/*
+dist/**/*
+build/**/*
+
+# Type definitions
+**/*.d.ts
+**/*.generated.*
+
+# Prisma generated files
+src/generated/prisma/**/*
+
+# Build outputs
+out/**/*
+.vercel/**/*
+
+# Cache directories
+.cache/**/*
+.parcel-cache/**/*

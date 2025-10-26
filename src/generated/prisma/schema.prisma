@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model JobSeeker {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  email             String    @unique
+  password          String?
+  fullName          String
+  phone             String?
+  currentJobTitle   String?
+  yearsOfExperience String?
+  education         String?
+  skills            String[]
+  resume            String? // URL or path to stored resume
+  city              String?
+  state             String?
+  country           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  profileComplete   Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
+
+  // Optional fields for additional profile information
+  bio               String?  @db.String
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  preferredJobTypes String[] // e.g., ["Full-time", "Remote", "Contract"]
+  expectedSalary    String?
+  noticePeriod      String?
+  languages         String[]
+  certifications    String[]
+
+  // Relations
+  applications JobApplication[]
+  resumes      Resume[]
+
+  @@map("job_seekers")
+}
+
+model Recruiter {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  email           String    @unique
+  password        String?
+  companyName     String
+  fullName        String
+  phone           String?
+  position        String?
+  companySize     String?
+  industry        String?
+  website         String?
+  city            String?
+  state           String?
+  country         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  isActive        Boolean   @default(true)
+  lastLogin       DateTime?
+  profileComplete Boolean   @default(false)
+  emailVerified   Boolean   @default(false)
+  phoneVerified   Boolean   @default(false)
+
+  // Optional fields for additional profile information
+  bio                String?  @db.String
+  linkedinUrl        String?
+  companyDescription String?  @db.String
+  companyLogo        String? // URL to company logo
+  companyBenefits    String[] // e.g., ["Health Insurance", "Remote Work", "401k"]
+  hiringNeeds        String[] // e.g., ["Software Engineers", "Product Managers"]
+  preferredLocations String[] // e.g., ["Remote", "New York", "San Francisco"]
+
+  // Relations
+  jobs         Job[]
+  applications JobApplication[]
+
+  @@map("recruiters")
+}
+
+model Job {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  title               String
+  department          String?
+  company             String
+  companyId           String?
+  location            String
+  locationType        String
+  employmentType      String
+  experienceLevel     String?
+  salaryMin           Int?
+  salaryMax           Int?
+  salaryCurrency      String?
+  salaryPeriod        String?
+  description         String
+  responsibilities    String[]
+  requirements        String[]
+  benefits            String[]
+  applicationDeadline String?
+  applicationUrl      String?
+  postedDate          DateTime @default(now())
+  postedBy            String   @db.ObjectId // recruiter id
+  applicantsCount     Int      @default(0)
+
+  // Relations
+  recruiter    Recruiter        @relation(fields: [postedBy], references: [id])
+  applications JobApplication[]
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  jobId       String @db.ObjectId
+  jobSeekerId String @db.ObjectId
+  recruiterId String @db.ObjectId
+
+  // Application details
+  resumeUrl        String? // URL to uploaded resume
+  coverLetter      String? @db.String
+  expectedSalary   String?
+  noticePeriod     String?
+  availabilityDate String?
+
+  // Application status
+  status       String    @default("Applied") // Applied, Under Review, Shortlisted, Rejected, Hired
+  appliedDate  DateTime  @default(now())
+  reviewedDate DateTime?
+  notes        String?   @db.String
+
+  // Additional information
+  portfolioUrl    String?
+  linkedinUrl     String?
+  githubUrl       String?
+  additionalNotes String? @db.String
+
+  // Relations
+  job       Job       @relation(fields: [jobId], references: [id])
+  jobSeeker JobSeeker @relation(fields: [jobSeekerId], references: [id])
+  recruiter Recruiter @relation(fields: [recruiterId], references: [id])
+
+  @@map("job_applications")
+}
+
+model Resume {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  jobSeekerId     String   @db.ObjectId
+  name            String
+  template        String
+  data            Json // Store all resume data as JSON
+  lastModified    DateTime @default(now())
+  jobApplications Int      @default(0)
+  isActive        Boolean  @default(true)
+
+  // Relations
+  jobSeeker JobSeeker @relation(fields: [jobSeekerId], references: [id])
+
+  @@map("resumes")
+}
