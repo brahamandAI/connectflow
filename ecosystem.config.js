@@ -6,7 +6,8 @@ module.exports = {
       args: 'start',
       cwd: '/home/connectflow/htdocs/connectflow.co.in/connectflow',
       instances: 1,
-      autorestart: true,
+      autorestart: false,
+      stop_exit_codes: '0',
       watch: false,
       max_memory_restart: '1G',
       env: {
