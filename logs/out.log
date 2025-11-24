@@ -22,3 +22,7 @@
 > connectflow@0.1.0 start
 > next start -p $PORT || 3005
 
+2025-11-24T13:34:28: 
+> connectflow@0.1.0 start
+> PORT=${PORT:-3005} next start -p $PORT
+
